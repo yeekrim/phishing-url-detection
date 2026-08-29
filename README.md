@@ -85,10 +85,32 @@ python src/ensemble.py \
 ```
 
 ## 결과 요약
-- LightGBM — 학습 정확도 약 1.0, 피처 중요도에서 URL 토큰·도메인 관련 피처가 상위
-- CNN — 학습 정확도 약 0.99
-- 앙상블 — 두 모델의 예측 확률을 평균해 최종 판별. 확률대별로 **정상 / 의심 / 피싱** 세 구간으로 시각화
-- 검증 데이터에 대한 모델별 예측 확률: [`data/final/model_percentage.csv`](data/final/model_percentage.csv)
+검증 데이터 70,000건(정상 50,000 / 피싱 20,000)에 대한 결과입니다.
+아래 그래프는 [`src/visualize.py`](src/visualize.py) 로 [`data/final/model_percentage.csv`](data/final/model_percentage.csv) 에서 재생성할 수 있습니다.
+
+```bash
+python src/visualize.py   # docs/images/*.png 생성
+```
+
+### 예측 확률 분포
+정상/피싱이 확률 양극단으로 뚜렷하게 분리되며, 가운데 회색 구간이 **의심 범위(0.35~0.65)** 입니다.
+
+![예측 확률 분포](docs/images/probability_distribution.png)
+
+### 앙상블 혼동행렬
+70,000건 중 오분류는 1건으로 정확도 약 100%입니다.
+
+![앙상블 혼동행렬](docs/images/confusion_matrix.png)
+
+### 모델별 성능 비교
+![모델별 성능 비교](docs/images/metrics_comparison.png)
+
+- **LightGBM** — 학습 정확도 약 1.0, 피처 중요도에서 URL 토큰·도메인 관련 피처가 상위
+- **CNN** — 학습 정확도 약 0.99 (발표자료 기준)
+- **앙상블** — 두 모델의 예측 확률을 평균해 최종 판별. 확률대별로 **정상 / 의심 / 피싱** 세 구간으로 분류
+
+> ⚠️ `model_percentage.csv` 의 `CNN 예측값` 컬럼은 결과 저장 과정에서 전부 0(정상)으로
+> 누락되어 있어, 위 비교 그래프에서는 신뢰 가능한 **LightGBM 과 앙상블만** 표시했습니다.
 
 ## 팀
 WHS 2기 떡밥팀 — 박찬민, 김주령, 김해찬, 김현진, 이경림, 이소영, 홍혜원 (멘토: 손승호)
