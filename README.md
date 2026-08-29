@@ -85,32 +85,39 @@ python src/ensemble.py \
 ```
 
 ## 결과 요약
-검증 데이터 70,000건(정상 50,000 / 피싱 20,000)에 대한 결과입니다.
-아래 그래프는 [`src/visualize.py`](src/visualize.py) 로 [`data/final/model_percentage.csv`](data/final/model_percentage.csv) 에서 재생성할 수 있습니다.
+`valid_data.csv` 를 계층적 8:2 로 나눠(학습 56,000 / 테스트 14,000) **LightGBM · CNN · 앙상블**을
+동일한 테스트셋에서 학습·평가했습니다. 아래 그래프는 한 번의 실행으로 재현할 수 있습니다.
 
 ```bash
-python src/visualize.py   # docs/images/*.png 생성
+python src/run_comparison.py   # 세 모델 학습 + docs/images/*.png 생성
 ```
 
-### 예측 확률 분포
-정상/피싱이 확률 양극단으로 뚜렷하게 분리되며, 가운데 회색 구간이 **의심 범위(0.35~0.65)** 입니다.
+| 모델 | Accuracy | Precision | Recall | F1 |
+| --- | --- | --- | --- | --- |
+| LightGBM | 1.000 | 1.000 | 1.000 | 1.000 |
+| CNN | 0.963 | 0.983 | 0.885 | 0.932 |
+| **앙상블** | **0.9999** | **0.9998** | **1.000** | **0.9999** |
 
-![예측 확률 분포](docs/images/probability_distribution.png)
+### 모델별 성능 비교
+CNN 을 다시 학습시켜 세 모델을 동일 조건에서 비교했습니다. LightGBM 이 가장 높고,
+앙상블은 두 모델의 예측 확률을 평균하여 CNN 단독보다 재현율을 끌어올립니다.
+
+![모델별 성능 비교](docs/images/metrics_comparison.png)
 
 ### 앙상블 혼동행렬
-70,000건 중 오분류는 1건으로 정확도 약 100%입니다.
+테스트 14,000건에 대해 오분류는 1건으로 정확도 약 100%입니다.
 
 ![앙상블 혼동행렬](docs/images/confusion_matrix.png)
 
-### 모델별 성능 비교
-![모델별 성능 비교](docs/images/metrics_comparison.png)
+### 예측 확률 분포
+정상/피싱이 확률 양극단으로 뚜렷하게 분리되며, 가운데 회색 구간이 **의심 범위(0.35~0.65)** 입니다.
+확률대별로 **정상 / 의심 / 피싱** 세 구간으로 분류합니다.
 
-- **LightGBM** — 학습 정확도 약 1.0, 피처 중요도에서 URL 토큰·도메인 관련 피처가 상위
-- **CNN** — 학습 정확도 약 0.99 (발표자료 기준)
-- **앙상블** — 두 모델의 예측 확률을 평균해 최종 판별. 확률대별로 **정상 / 의심 / 피싱** 세 구간으로 분류
+![예측 확률 분포](docs/images/probability_distribution.png)
 
-> ⚠️ `model_percentage.csv` 의 `CNN 예측값` 컬럼은 결과 저장 과정에서 전부 0(정상)으로
-> 누락되어 있어, 위 비교 그래프에서는 신뢰 가능한 **LightGBM 과 앙상블만** 표시했습니다.
+> 재학습한 세 모델의 테스트셋 예측값은 [`data/final/model_comparison.csv`](data/final/model_comparison.csv) 에 저장됩니다.
+> (발표 당시 결과 원본은 [`data/final/model_percentage.csv`](data/final/model_percentage.csv) — 이 파일의 `CNN 예측값` 컬럼은
+> 저장 과정에서 누락되어 있어, 위 비교는 CNN 을 새로 학습시킨 결과를 사용합니다.)
 
 ## 팀
 WHS 2기 떡밥팀 — 박찬민, 김주령, 김해찬, 김현진, 이경림, 이소영, 홍혜원 (멘토: 손승호)
