@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 학습 산출물
+*.joblib
+*.keras
+*.h5
+best_model.keras
+
+# 노트북 체크포인트
+.ipynb_checkpoints/
+
+# OS / 에디터
+.DS_Store
+.idea/
+.vscode/

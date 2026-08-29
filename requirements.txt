@@ -1,0 +1,22 @@
+# 데이터 처리
+pandas
+numpy
+scipy
+openpyxl        # .xls/.xlsx 읽기용
+
+# 머신러닝 (LightGBM)
+scikit-learn
+lightgbm
+joblib
+
+# 딥러닝 (CNN)
+tensorflow
+
+# 피처 추출 (네트워크 계열)
+requests
+beautifulsoup4
+python-whois
+
+# 시각화 (선택)
+matplotlib
+seaborn
