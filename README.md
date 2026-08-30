@@ -12,6 +12,7 @@ URL 에서 추출한 15개 피처(수치형 14개 + URL 토큰)를 이용해 **L
 - [02. 프로젝트 수행](#02-프로젝트-수행)
 - [03. 프로젝트 성과](#03-프로젝트-성과)
 - [04. 추후 계획](#04-추후-계획)
+- [부록 · 앙상블 효과 검증 (held-out 테스트)](#부록--앙상블-효과-검증-held-out-테스트)
 - [저장소 구조](#저장소-구조) · [실행 환경](#실행-환경)
 
 ---
@@ -158,6 +159,54 @@ python src/run_comparison.py   # 세 모델 학습 + docs/images/*.png 생성
 
 ---
 
+## 부록 · 앙상블 효과 검증 (held-out 테스트)
+위 성과의 높은 점수(특히 LightGBM 정확도 1.0)가 **일반화 성능인지, 과적합/누수인지** 확인하기 위해
+완전히 분리된 파일로 다시 평가했습니다. → [`src/holdout_experiment.py`](src/holdout_experiment.py)
+
+```bash
+python src/holdout_experiment.py
+```
+
+- **학습** `data/final/final_train.csv` (16만, 중복 제거) → **평가** `data/final/final_test.csv` (9만)
+- 두 파일엔 URL·Label 만 있어 **URL 문자열 신호만** 사용 (엔지니어링 피처 미사용)
+- ⚠️ 발견된 **데이터 누수**: 테스트 URL 의 약 44%가 학습셋에도 존재 (피싱 URL 재사용이 원인)
+
+### held-out 성능 비교 (전체 테스트, n=89,994)
+| 모델 | Accuracy | Precision | Recall | F1 |
+| --- | --- | --- | --- | --- |
+| LightGBM | 0.953 | 0.980 | 0.914 | 0.946 |
+| **CNN** | **0.981** | 0.990 | **0.967** | **0.978** |
+| 앙상블 | 0.977 | **0.994** | 0.955 | 0.974 |
+
+![held-out 성능 비교](docs/images/holdout_metrics.png)
+
+**두 가지 사실이 드러납니다.**
+1. **피처가 없으면 순위가 뒤집힌다** — `valid_data` 실험에선 LightGBM 이 1.0 으로 압승했지만,
+   URL 문자열만 쓰면 **CNN 이 가장 우수**합니다. 즉 LightGBM 의 1.0 은 알고리즘이 아니라
+   **엔지니어링 피처(WHOIS·HTTP 등)** 덕분이었습니다.
+2. **앙상블은 두 실험 모두 1등을 못 한다** — 항상 강한 모델과 약한 모델의 *사이* 값입니다.
+   한 모델이 확실히 우세하면 앙상블은 성능을 끌어올리기보다 **희석**시킵니다.
+
+| 실험 | 1등 | 앙상블 | 꼴등 |
+| --- | --- | --- | --- |
+| valid_data (피처 O) | LightGBM 1.0000 | 0.9999 | CNN 0.963 |
+| held-out (URL만) | CNN 0.981 | 0.977 | LightGBM 0.953 |
+
+### 앙상블이 유일하게 이긴 지점 — 오탐 최소화
+처음 보는 정상 URL 50,000개에 대한 **오탐(정상을 피싱으로 오판)** 은 앙상블이 가장 적었습니다.
+재현율을 조금 양보하는 대신 **불필요한 차단을 최소화**하는 보수적 성향입니다.
+
+![오탐률 비교](docs/images/holdout_false_positives.png)
+
+> 예측 결과 전체: [`data/final/holdout_predictions.csv`](data/final/holdout_predictions.csv)
+> (`url, Label, is_unseen, lgbm_prob, cnn_prob, ensemble_prob`)
+
+**결론** — 이 데이터셋에선 항상 더 나은 단일 모델이 있어 앙상블의 실익이 크지 않았습니다.
+앙상블은 두 모델이 *비슷하게 강하면서 서로 다른 실수를 할 때* 값어치를 하며, 여기서는
+그 조건이 맞지 않았습니다. 또한 데이터 누수를 감안하면 본문의 높은 점수들은 실제 환경보다 낙관적입니다.
+
+---
+
 ## 저장소 구조
 ```
 phishing-url-detection/
@@ -167,7 +216,8 @@ phishing-url-detection/
 │   ├── train_lgbm.py      # LightGBM 학습·평가
 │   ├── train_cnn.py       # 1D-CNN 학습·평가
 │   ├── ensemble.py        # 저장된 두 모델로 앙상블 평가 (+ 의심 범위 분류)
-│   └── run_comparison.py  # 세 모델 학습·비교 + 결과 이미지 생성 (재현용)
+│   ├── run_comparison.py  # 세 모델 학습·비교 + 결과 이미지 생성 (valid_data)
+│   └── holdout_experiment.py  # 누수 인지 held-out 테스트 (일반화 성능 검증)
 ├── data/
 │   ├── raw/               # 원본 URL 목록
 │   ├── features/          # 피처 추출 중간 산출물

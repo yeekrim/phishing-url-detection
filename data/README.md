@@ -27,7 +27,9 @@
 | `valid_data.csv` | **15개 피처 + Tokenized_url + Label 이 모두 포함된 검증용 데이터** (모델 입력 형식의 표준 예시) |
 | `final_train.csv` | 학습용 (정상 100,000 + 피싱 100,000) — `url`, `Label` |
 | `final_test.csv` | 테스트용 (정상 50,000 + 피싱 39,994) — `url`, `Label` |
-| `model_percentage.csv` | 검증 데이터에 대한 LightGBM / CNN / 앙상블 예측 확률 결과 |
+| `model_percentage.csv` | (발표 원본) 검증 데이터 예측 결과 — `CNN 예측값` 컬럼은 저장 누락 |
+| `model_comparison.csv` | `run_comparison.py` 산출 — valid_data 분할 테스트셋의 세 모델 예측 확률 |
+| `holdout_predictions.csv` | `holdout_experiment.py` 산출 — held-out(final_test) 예측 결과 (`url, Label, is_unseen, lgbm_prob, cnn_prob, ensemble_prob`) |
 
 ## 피처 컬럼 (valid_data.csv 기준)
 `url, IP_LIKE, AT, URL_Depth, Redirection, Is_Https, TINY_URL, Check_Hyphen, Query,
