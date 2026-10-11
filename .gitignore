@@ -19,3 +19,7 @@ best_model.keras
 .DS_Store
 .idea/
 .vscode/
+
+# v2 수집 원본·중간 데이터 (재배포 조건 때문에 공개하지 않음)
+data/v2/raw/
+data/v2/interim/
