@@ -1,6 +1,6 @@
 """v2 네트워크 조회 — 피싱 사이트에 접속하므로 안전장치를 둔다.
 
-Docker 컨테이너 안에서 실행하는 것을 전제로 한다 (docker/README 참고).
+Docker 컨테이너 안에서 실행하는 것을 전제로 한다 (docker/run.sh).
 
 안전장치
     - HTML 텍스트만 받는다. JavaScript 를 실행하지 않고, 폼을 제출하지 않는다.
@@ -67,6 +67,14 @@ class _PageParser(HTMLParser):
                 self.onmouseover.append(value)
 
 
+def _decode(body: bytes, encoding: str | None) -> str:
+    """페이지가 선언한 인코딩으로 읽되, 파이썬이 모르는 이름(예: Windows-31J)이면 UTF-8 로 읽는다."""
+    try:
+        return body.decode(encoding or "utf-8", errors="replace")
+    except LookupError:
+        return body.decode("utf-8", errors="replace")
+
+
 def fetch_page(url: str, session: requests.Session) -> dict:
     """페이지를 받아 피처 계산에 필요한 정보만 돌려준다.
 
@@ -113,7 +121,7 @@ def fetch_page(url: str, session: requests.Session) -> dict:
                 break
         resp.close()
         parser = _PageParser()
-        parser.feed(body[:MAX_BYTES].decode(resp.encoding or "utf-8", errors="replace"))
+        parser.feed(_decode(body[:MAX_BYTES], resp.encoding))
         result.update(status="ok", n_anchors=parser.n_anchors, onmouseover=parser.onmouseover)
     except UnsafeDestination:
         result["status"] = "unsafe"
@@ -121,7 +129,7 @@ def fetch_page(url: str, session: requests.Session) -> dict:
         result["status"] = "dns_error" if "DNS" in str(e) else "error"
     except requests.Timeout:
         result["status"] = "timeout"
-    except (requests.RequestException, ValueError, UnicodeError):
+    except (requests.RequestException, ValueError, UnicodeError, LookupError):
         result["status"] = "error"
     return result
 

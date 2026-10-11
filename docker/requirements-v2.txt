@@ -5,3 +5,4 @@ tldextract
 python-whois
 cryptography
 certifi
+dnspython

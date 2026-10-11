@@ -10,5 +10,5 @@ RUN pip install --no-cache-dir -r /tmp/requirements-v2.txt && rm /tmp/requiremen
 
 USER crawler
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
-# 코드와 데이터는 실행할 때 볼륨으로 붙인다 (run_build_features.sh)
-ENTRYPOINT ["python", "src/v2/build_features.py"]
+# 코드와 데이터는 실행할 때 볼륨으로 붙인다 (docker/run.sh)
+ENTRYPOINT ["python"]

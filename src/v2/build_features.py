@@ -9,7 +9,7 @@
                                            칼럼(Tokenized_url, registered_domain)도 뺀다.
 
 중간에 끊겨도 같은 명령을 다시 실행하면 이미 계산한 URL 은 건너뛴다.
-Docker 컨테이너 안에서 실행한다 (docker/run_build_features.sh).
+Docker 컨테이너 안에서 실행한다 (docker/run.sh src/v2/build_features.py ...).
 
 예시:
     python src/v2/build_features.py --tag pilot --phishing-sample 2000 --legit-sample 2000
@@ -41,6 +41,9 @@ PRIVATE_COLUMNS = ["url", "Tokenized_url", "registered_domain"]
 # 내장된 공개 접미사 목록만 사용 (실행 중 인터넷에서 받지 않음 → 결과 재현 가능)
 _extract = tldextract.TLDExtract(suffix_list_urls=(), cache_dir=None)
 _local = threading.local()
+# WHOIS 서버(등록 기관)는 요청 제한이 엄격하므로 동시에 몇 개만 조회한다
+WHOIS_CONCURRENCY = 8
+_whois_slots = threading.Semaphore(WHOIS_CONCURRENCY)
 
 
 def _session() -> requests.Session:
@@ -56,13 +59,28 @@ def url_hash(url: str) -> str:
 
 
 def process(row: dict) -> dict:
+    """URL 하나를 처리한다. 예상하지 못한 오류가 나도 전체 실행을 멈추지 않고 그 URL 만 error 로 남긴다."""
+    try:
+        return _process(row)
+    except Exception as e:  # noqa: BLE001 — 수십만 개를 도는 동안 한 URL 때문에 멈추지 않기 위함
+        out = {"url": row["url"], "url_sha256": url_hash(row["url"]), "Label": row["Label"],
+               "source": row["source"], "collected_at": row["collected_at"],
+               "fetch_status": f"crash:{e.__class__.__name__}"}
+        out.update(fp.compute(row["url"], None, None, None))
+        return out
+
+
+def _process(row: dict) -> dict:
     """URL 하나: 페이지·인증서·WHOIS 를 조회하고 피처를 계산한다."""
     url = row["url"]
     page = fetch_page(url, _session())
     cert = get_certificate(url)
     ext = _extract(url)
-    registered = ext.registered_domain
-    whois = lookup_whois(registered) if registered and fp.ip_like(url) == fp.LEGIT else None
+    registered = ext.top_domain_under_public_suffix
+    whois = None
+    if registered and fp.ip_like(url) == fp.LEGIT:
+        with _whois_slots:
+            whois = lookup_whois(registered)
 
     out = {"url": url, "url_sha256": url_hash(url), "Label": row["Label"],
            "source": row["source"], "collected_at": row["collected_at"],
@@ -81,9 +99,22 @@ def _partial(page: dict) -> dict:
     return {"final_url": page["final_url"], "n_redirects": page["n_redirects"]}
 
 
+def latest(pattern: str) -> str:
+    files = sorted(glob.glob(os.path.join(INTERIM_DIR, pattern)))
+    if not files:
+        raise FileNotFoundError(pattern)
+    return files[-1]
+
+
 def load_inputs(phishing_sample: int, legit_sample: int, seed: int) -> pd.DataFrame:
-    phish = pd.read_csv(sorted(glob.glob(os.path.join(INTERIM_DIR, "phishing_urls_*.csv")))[-1])
-    legit = pd.read_csv(sorted(glob.glob(os.path.join(INTERIM_DIR, "legit_urls_*_d*.csv")))[-1])
+    """피싱은 DNS 사전 확인을 거친 목록(phishing_resolvable_*)이 있으면 그것을, 없으면 원래 목록을 쓴다."""
+    try:
+        phish_path = latest("phishing_resolvable_????-??-??.csv")
+    except FileNotFoundError:
+        phish_path = latest("phishing_urls_????-??-??.csv")
+    print(f"피싱 입력: {phish_path}")
+    phish = pd.read_csv(phish_path, low_memory=False)
+    legit = pd.read_csv(latest("legit_urls_*_d*.csv"))
     if phishing_sample:
         phish = phish.sample(n=min(phishing_sample, len(phish)), random_state=seed)
     if legit_sample:
@@ -98,7 +129,7 @@ def main() -> None:
     parser.add_argument("--tag", required=True, help="출력 파일 이름에 붙일 태그 (예: pilot)")
     parser.add_argument("--phishing-sample", type=int, default=0)
     parser.add_argument("--legit-sample", type=int, default=0)
-    parser.add_argument("--workers", type=int, default=32)
+    parser.add_argument("--workers", type=int, default=64)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# 컨테이너 안에서 피처를 계산한다. 레포 루트에서 실행:
-#   bash docker/run_build_features.sh --tag pilot --phishing-sample 2000 --legit-sample 2000
+# v2 스크립트를 격리된 컨테이너 안에서 실행한다. 레포 루트에서:
+#   bash docker/run.sh src/v2/dns_prefilter.py --sample 5000
+#   bash docker/run.sh src/v2/build_features.py --tag pilot --phishing-sample 2000 --legit-sample 2000
 #
 # 격리 설정
 #   - 코드(src/)는 읽기 전용으로 붙이고, 쓰기는 data/v2/interim·processed 에만 허용
@@ -17,7 +18,7 @@ mkdir -p data/v2/interim data/v2/processed
 docker run --rm \
   --read-only --tmpfs /tmp:rw,size=256m \
   --cap-drop ALL --security-opt no-new-privileges \
-  --memory 2g --cpus 2 --pids-limit 256 \
+  --memory 2g --cpus 2 --pids-limit 512 \
   --user 10001:10001 \
   -v "$PWD/src:/work/src:ro" \
   -v "$PWD/data/v2/interim:/work/data/v2/interim" \
