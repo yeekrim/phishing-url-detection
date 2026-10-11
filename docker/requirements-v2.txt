@@ -1,0 +1,7 @@
+# v2 피처 계산 컨테이너 전용 의존성
+pandas
+requests
+tldextract
+python-whois
+cryptography
+certifi
