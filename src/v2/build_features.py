@@ -131,6 +131,8 @@ def main() -> None:
     parser.add_argument("--legit-sample", type=int, default=0)
     parser.add_argument("--workers", type=int, default=64)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--limit", type=int, default=0,
+                        help="남은 URL 중 N개만 처리하고 끝낸다 (구간 실행: 긴 실행에서 Docker 연결 자원이 쌓이는 것을 막음)")
     args = parser.parse_args()
 
     os.makedirs(PROCESSED_DIR, exist_ok=True)
@@ -142,6 +144,8 @@ def main() -> None:
         done = set(pd.read_csv(interim_path, usecols=["url"])["url"])
         todo = todo[~todo["url"].isin(done)]
         print(f"이어서 실행: 이미 {len(done):,}개 완료, 남은 {len(todo):,}개")
+    if args.limit:
+        todo = todo.head(args.limit)
     print(f"대상 {len(todo):,}개 (피싱 {int(todo['Label'].sum()):,} / 정상 {int((todo['Label'] == 0).sum()):,})")
 
     start = time.time()
