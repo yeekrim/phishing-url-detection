@@ -20,6 +20,10 @@
       "플랫폼이면 피싱" 으로 배우기 쉽다. test 오탐(오탐률 0.1%)의 16.5% 가 플랫폼 정상 페이지였다(정상 전체 중 0.2%).
       그래서 플랫폼 정상 행의 학습 가중치를 키우는 후보를 같이 비교한다.
 
+실행 (본문 전체 벡터 사용, extract_fulltext.py 결과):
+    V3_VECTORS=data/v3/interim/vectors_full python src/v3/train.py
+    본문 앞 2,000자 벡터(기본값)보다 교차 예측 기준 점수 0.8393 → 0.8455, 시간 검증 0.8622 → 0.8644 로 나아서 이쪽을 쓴다.
+
 출력: data/v3/interim/scores.parquet (sha256, split, label, 모델별 점수), models/v3/*.txt,
       models/v3/train_config.json, reports/v3/tuning.md
 """

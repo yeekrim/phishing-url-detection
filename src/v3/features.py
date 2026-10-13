@@ -43,6 +43,7 @@ _extract_public = tldextract.TLDExtract(suffix_list_urls=(), cache_dir=None)
 
 MAX_HTML_CHARS = 2_000_000
 TITLE_CHARS, TEXT_CHARS, HTML_PREFIX_CHARS = 200, 2000, 5000
+FULL_TEXT_CHARS = 200_000
 
 SHORTENERS = {"bit.ly", "goo.gl", "tinyurl.com", "t.co", "ow.ly", "is.gd", "buff.ly", "rb.gy", "cutt.ly",
               "rebrand.ly", "shorturl.at", "tiny.cc", "s.id", "t.ly", "bit.do", "qrco.de", "q-r.to"}
@@ -195,8 +196,9 @@ EMPTY_HTML = {
 }
 
 
-def html_features(html: str | None, url: str) -> tuple[dict, dict]:
-    """(숫자 피처, 텍스트 필드). 파싱할 수 없으면 숫자 피처는 0, 텍스트는 빈 문자열."""
+def html_features(html: str | None, url: str, text_chars: int = TEXT_CHARS) -> tuple[dict, dict]:
+    """(숫자 피처, 텍스트 필드). 파싱할 수 없으면 숫자 피처는 0, 텍스트는 빈 문자열.
+    text_chars: 본문을 몇 자까지 남길지 (n-gram 용 본문 전체는 FULL_TEXT_CHARS)."""
     texts = {"title": "", "text": "", "html_prefix": strip_doctype(html or "")[:HTML_PREFIX_CHARS]}
     feats = dict(EMPTY_HTML)
     if not html or not html.strip():
@@ -317,7 +319,7 @@ def html_features(html: str | None, url: str) -> tuple[dict, dict]:
         bdi_form_action=_match(form_domain, page_domain),
         bdi_common_link=_match(Counter(link_domains).most_common(1)[0][0] if link_domains else None, page_domain),
     )
-    texts.update(title=title[:TITLE_CHARS], text=body_text[:TEXT_CHARS])
+    texts.update(title=title[:TITLE_CHARS], text=body_text[:text_chars])
     return feats, texts
 
 

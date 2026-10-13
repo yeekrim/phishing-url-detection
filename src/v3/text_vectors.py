@@ -22,7 +22,8 @@ import scipy.sparse as sp
 from sklearn.feature_extraction.text import HashingVectorizer
 
 FEATURE_DIR = os.path.join("data", "v3", "interim", "features")
-VECTOR_DIR = os.path.join("data", "v3", "interim", "vectors")
+# V3_VECTORS 로 다른 벡터 폴더(예: 본문 전체를 쓴 vectors_full)를 골라 학습할 수 있다.
+VECTOR_DIR = os.environ.get("V3_VECTORS", os.path.join("data", "v3", "interim", "vectors"))
 N_FEATURES = 2 ** 20
 BLOCKS = ("url", "html", "text")
 
