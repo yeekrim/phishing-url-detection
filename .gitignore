@@ -23,3 +23,8 @@ best_model.keras
 # v2 수집 원본·중간 데이터 (재배포 조건 때문에 공개하지 않음)
 data/v2/raw/
 data/v2/interim/
+
+# v3 원본(HTML 포함)·중간 데이터
+data/v3/raw/
+data/v3/interim/
+models/v3/*.txt
