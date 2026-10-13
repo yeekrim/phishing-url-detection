@@ -120,6 +120,9 @@ def url_features(url: str) -> dict:
     path = parts.path
     lower = url.lower()
     host_tokens = re.split(r"[.\-]", host)
+    # 사이트 이름: 등록 도메인의 접미사 앞 부분 (paypal.com → paypal, abc.netlify.app → abc).
+    # 호스팅 플랫폼이라는 사실만으로는 정상·피싱을 가를 수 없어서, 이름 자체의 모양을 따로 본다.
+    label = "" if _is_ip(host) else ext.domain
     return {
         "url_len": len(url),
         "host_len": len(host),
@@ -145,6 +148,11 @@ def url_features(url: str) -> dict:
         "is_shortener": int(public.top_domain_under_public_suffix in SHORTENERS),
         # 사설 접미사(github.io, weebly.com 등) 아래의 사이트 = 무료 호스팅·플랫폼
         "is_hosted_platform": int(bool(ext.is_private)),
+        "site_label_len": len(label),
+        "site_label_digits": sum(ch.isdigit() for ch in label),
+        "site_label_hyphens": label.count("-"),
+        "site_label_entropy": _entropy(label),
+        "site_label_suspicious": int(any(w in label for w in SUSPICIOUS_WORDS)),
         "n_suspicious_words": sum(w in lower for w in SUSPICIOUS_WORDS),
         "has_php": int(".php" in path.lower()),
         "has_html_ext": int(path.lower().endswith((".html", ".htm"))),

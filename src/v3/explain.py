@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import glob
+import json
 import os
 from collections import defaultdict
 
@@ -23,11 +24,10 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.utils import murmurhash3_32
 
 from text_vectors import BLOCKS, FEATURE_DIR, N_FEATURES, VECTOR_DIR, VECTORIZERS
-from train import MODEL_DIR, SCORES_PATH, load_table
+from train import MODEL_DIR, SCORES_PATH, hosted_weight, load_table
 
 REPORT = os.path.join("reports", "v3", "explain.md")
 SAMPLE = 30_000
-ALPHA = 3e-6       # train.py 에서 교차 예측 AP 로 고른 값
 TOKEN_SHARDS = 4   # 해시 번호 → 조각 대응표를 만들 학습 파일 수
 TOP = 25
 
@@ -51,16 +51,20 @@ def lgbm_shap(df: pd.DataFrame, name: str) -> pd.DataFrame:
 
 
 def fit_full_sgd(df: pd.DataFrame) -> SGDClassifier:
-    """train 전체로 URL+HTML+본문 n-gram 모델을 다시 학습 (train.py 는 점수만 저장하므로)."""
-    model = SGDClassifier(loss="log_loss", alpha=ALPHA, random_state=0)
+    """train 전체로 URL+HTML+본문 n-gram 모델을 다시 학습 (train.py 는 점수만 저장하므로).
+    alpha 와 호스팅 정상 가중치는 train.py 가 고른 값(train_config.json)을 쓴다."""
+    with open(os.path.join(MODEL_DIR, "train_config.json")) as fh:
+        cfg = json.load(fh)["text"]["all"]
+    model = SGDClassifier(loss="log_loss", alpha=cfg["alpha"], random_state=0)
     shards = sorted(df.loc[df.split == "train", "shard"].unique())
     rng = np.random.default_rng(0)
     for _ in range(3):
         for shard in rng.permutation(shards):
             X = sp.load_npz(os.path.join(VECTOR_DIR, f"{shard}.npz"))
-            y = df[df.shard == shard].sort_values("row")["label"].to_numpy()
-            order = rng.permutation(len(y))
-            model.partial_fit(X[order], y[order], classes=[0, 1])
+            meta = df[df.shard == shard].sort_values("row")
+            order = rng.permutation(len(meta))
+            model.partial_fit(X[order], meta["label"].to_numpy()[order], classes=[0, 1],
+                              sample_weight=hosted_weight(meta, cfg["hosted_weight"])[order])
     return model
 
 

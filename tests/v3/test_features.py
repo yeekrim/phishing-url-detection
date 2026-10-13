@@ -28,6 +28,14 @@ def test_hosted_platform_sites_are_separate_domains():
     assert F.url_features("https://www.example.com/")["is_hosted_platform"] == 0
 
 
+def test_site_label_is_name_under_suffix():
+    hosted = F.url_features("https://secure-login1.netlify.app")
+    assert (hosted["site_label_len"], hosted["site_label_digits"], hosted["site_label_hyphens"]) == (13, 1, 1)
+    assert hosted["site_label_suspicious"] == 1
+    assert F.url_features("https://www.paypal.com")["site_label_len"] == 6
+    assert F.url_features("http://1.2.3.4/a")["site_label_len"] == 0
+
+
 def test_bdi_values_match_paper_encoding():
     html = """<html><body>
       <img src="https://cdn.paypal.com/logo.png">
