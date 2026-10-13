@@ -83,13 +83,14 @@ def process(name: str, pool: Pool) -> None:
 
 
 def refresh_url_features() -> None:
-    """URL 피처 규칙만 바뀌었을 때: 원본을 다시 받지 않고 저장된 URL 로 URL 피처만 다시 계산한다."""
+    """URL 피처·HTML 앞부분 정규화 규칙만 바뀌었을 때: 원본을 다시 받지 않고 저장된 값으로 다시 계산한다."""
     for name in sorted(os.listdir(OUT_DIR)):
         path = os.path.join(OUT_DIR, name)
         df = pd.read_parquet(path)
         clean = df["url"].map(features.strip_query)
         fresh = pd.DataFrame([features.url_features(u) for u in clean], index=df.index)
         df["url_clean"] = clean
+        df["html_prefix"] = df["html_prefix"].map(features.strip_doctype)
         df[fresh.columns] = fresh
         df.to_parquet(path + ".tmp", index=False, compression="zstd")
         os.replace(path + ".tmp", path)

@@ -16,7 +16,11 @@ URL 피처는 쿼리(?...)와 프래그먼트(#...)를 지운 주소로 계산�
 쿼리를 지웠는데, 그 작업을 정상 클래스에만 했다(논문 부록 A.2: "We focused our PII removal efforts on the
 benign class only"). 실제로 시험 파일에서 쿼리가 있는 URL 은 정상 0% / 피싱 6.8% 였다. 그대로 두면
 "쿼리가 있으면 피싱" 이라는 지름길이 생기므로 두 클래스 모두 똑같이 지운다.
-같은 이유로 URL 은 소문자로 바꿔 계산한다. 대문자가 있는 URL 비율이 정상은 train/test 모두 13% 인데
+같은 이유로 URL 은 소문자로 바꾸고 끝의 '/' 를 지운다. 경로가 없는 URL(https://a.com)이 정상 0% /
+피싱 train 6% · test 42% 였다 — 정상 URL 은 항상 'https://a.com/' 꼴로 저장되어 있었다.
+HTML 맨 앞의 <!DOCTYPE> 선언도 지운다. 정상은 99% 이상이 선언 없이 '<html' 로 시작하는데 피싱은
+train 0% / test 75% 가 선언으로 시작해, 수집 시기에 따라 저장 방식이 달랐던 것으로 보인다.
+URL 대소문자도 대문자가 있는 URL 비율이 정상은 train/test 모두 13% 인데
 피싱은 train 17% / test 2% 로, 수집 묶음에 따라 피싱 URL 의 대소문자가 바뀌어 저장된 것으로 보인다.
 
 HTML 은 신뢰할 수 없는 데이터다. lxml 로 텍스트 파싱만 하고, 스크립트 실행·외부 자원 요청은 하지 않는다.
@@ -91,12 +95,20 @@ def _port(parts) -> int | None:
 
 
 def strip_query(url: str) -> str:
-    """쿼리와 프래그먼트를 지우고 소문자로 바꾼 주소 (두 클래스에 똑같이 적용)."""
+    """쿼리·프래그먼트·끝의 '/' 를 지우고 소문자로 바꾼 주소 (두 클래스에 똑같이 적용)."""
     try:
         parts = urlsplit(url)
+        clean = parts._replace(query="", fragment="").geturl()
     except ValueError:
-        return url.split("?")[0].split("#")[0].lower()
-    return parts._replace(query="", fragment="").geturl().lower()
+        clean = url.split("?")[0].split("#")[0]
+    return clean.lower().rstrip("/")
+
+
+DOCTYPE = re.compile(r"^\s*<!doctype[^>]*>\s*", re.IGNORECASE)
+
+
+def strip_doctype(html: str) -> str:
+    return DOCTYPE.sub("", html, count=1)
 
 
 def url_features(url: str) -> dict:
@@ -177,7 +189,7 @@ EMPTY_HTML = {
 
 def html_features(html: str | None, url: str) -> tuple[dict, dict]:
     """(숫자 피처, 텍스트 필드). 파싱할 수 없으면 숫자 피처는 0, 텍스트는 빈 문자열."""
-    texts = {"title": "", "text": "", "html_prefix": (html or "")[:HTML_PREFIX_CHARS]}
+    texts = {"title": "", "text": "", "html_prefix": strip_doctype(html or "")[:HTML_PREFIX_CHARS]}
     feats = dict(EMPTY_HTML)
     if not html or not html.strip():
         return feats, texts

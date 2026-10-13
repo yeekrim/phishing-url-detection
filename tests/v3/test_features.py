@@ -74,3 +74,11 @@ def test_malformed_urls_do_not_crash():
 
 def test_url_case_does_not_change_url_features():
     assert F.compute("https://A.com/Login/PayPal", None) == F.compute("https://a.com/login/paypal", None)
+
+
+def test_trailing_slash_and_doctype_are_normalized():
+    assert F.strip_query("https://A.com/") == F.strip_query("https://a.com") == "https://a.com"
+    assert F.strip_query("https://a.com/x/") == "https://a.com/x"
+    _, t1 = F.html_features("<!DOCTYPE html>\n<html><body>a</body></html>", PAGE)
+    _, t2 = F.html_features("<html><body>a</body></html>", PAGE)
+    assert t1["html_prefix"] == t2["html_prefix"]
