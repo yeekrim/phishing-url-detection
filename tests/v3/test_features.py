@@ -134,3 +134,11 @@ def test_platforms_missing_from_bundled_psl_are_hosted():
     for host in ("weebly.com", "www.weebly.com", "a.kleinanzegien.de", "a.blogspot.com"):
         expected = int(host == "a.blogspot.com")   # blogspot.com 은 원래 사설 접미사 목록에 있음
         assert F.url_features(f"https://{host}")["is_hosted_platform"] == expected, host
+
+
+def test_mask_jp_only_changes_jp_suffix():
+    assert F.mask_jp("https://www.example.co.jp/login") == "https://www.example.com/login"
+    assert F.mask_jp("https://shop.jp") == "https://shop.com"
+    assert F.mask_jp("https://city.tokyo.jp/a") == "https://city.com/a"
+    assert F.mask_jp("https://jp.example.com/jp") == "https://jp.example.com/jp"
+    assert F.mask_jp("http://1.2.3.4/x.jp") == "http://1.2.3.4/x.jp"

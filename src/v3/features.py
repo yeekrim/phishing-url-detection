@@ -151,6 +151,20 @@ def strip_query(url: str) -> str:
     return clean.lower().rstrip("/")
 
 
+def mask_jp(url: str) -> str:
+    """URL n-gram 용: 공개 접미사가 .jp 로 끝나면(.jp, .co.jp, .go.jp …) .com 으로 바꾼다.
+    train 에서 .jp 는 정상 8,925 / 피싱 91 개라 모델이 ".jp 면 정상" 으로 배웠고, test .jp 피싱 탐지율이
+    61.5% 로 그 외(76.2%)보다 낮았다. 실제 공격자가 해킹한 .jp 사이트에 피싱을 올리면 그대로 통과한다.
+    .com 으로 바꾸는 이유: 정상·피싱 모두에 가장 흔한 접미사라 새 단서가 되지 않는다
+    (".tld" 같은 표시로 바꾸면 그 표시가 다시 .jp 역할을 한다)."""
+    parts = safe_split(url)
+    host = parts.hostname or ""
+    suffix = _extract_public(host).suffix
+    if not (suffix == "jp" or suffix.endswith(".jp")):
+        return url
+    return url.replace(host, host[: -len(suffix)] + "com", 1)
+
+
 DOCTYPE = re.compile(r"^\s*<!doctype[^>]*>\s*", re.IGNORECASE)
 
 

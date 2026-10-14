@@ -5,7 +5,7 @@ HashingVectorizer 는 어휘 사전이 필요 없어(상태 없음) 파일마다
 66만 행 전체를 메모리에 올릴 수 없으므로(Mac 8GB) 파일 단위로 저장해 두고 학습 때 하나씩 읽는다.
 
 블록
-    url   : 쿼리를 지운 URL 의 글자 3~5-gram
+    url   : 쿼리를 지운 URL 의 글자 3~5-gram (.jp 접미사는 .com 으로 가림 — features.mask_jp)
     html  : HTML 앞부분 5,000자의 단어 1~2-gram (태그·속성 이름 포함)
     text  : 페이지 제목 + 본문 앞 2,000자의 단어 1~2-gram
 
@@ -20,6 +20,8 @@ import os
 import pandas as pd
 import scipy.sparse as sp
 from sklearn.feature_extraction.text import HashingVectorizer
+
+import features as F
 
 FEATURE_DIR = os.path.join("data", "v3", "interim", "features")
 # V3_VECTORS 로 다른 벡터 폴더(예: 본문 전체를 쓴 vectors_full)를 골라 학습할 수 있다.
@@ -42,7 +44,7 @@ def block_slice(block: str) -> slice:
 
 def vectorize(df: pd.DataFrame) -> sp.csr_matrix:
     parts = [
-        VECTORIZERS["url"].transform(df["url_clean"].fillna("")),
+        VECTORIZERS["url"].transform(df["url_clean"].fillna("").map(F.mask_jp)),
         VECTORIZERS["html"].transform(df["html_prefix"].fillna("")),
         VECTORIZERS["text"].transform((df["title"].fillna("") + " " + df["text"].fillna(""))),
     ]
