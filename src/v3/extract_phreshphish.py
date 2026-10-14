@@ -18,7 +18,9 @@ HTML 은 신뢰할 수 없는 데이터라 별도 폴더(data/v3/raw/)에 받고
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import re
 import subprocess
 import time
 from multiprocessing import Pool
@@ -97,14 +99,50 @@ def refresh_url_features() -> None:
         print(f"{name}: URL 피처 다시 계산", flush=True)
 
 
+BRANDS_PATH = os.path.join("data", "v3", "interim", "brands.json")
+BRAND_MIN_COUNT = 20
+NOT_BRANDS = {"other", "genericwebmailphishing", "na"}
+
+
+def train_brands() -> frozenset[str]:
+    """train 피싱의 공격 대상 이름(영숫자만, 4자 이상, 20번 이상 나온 것). test 는 보지 않는다."""
+    targets = pd.concat([pd.read_parquet(os.path.join(OUT_DIR, n), columns=["label", "target"])
+                         for n in sorted(os.listdir(OUT_DIR)) if n.startswith("train-")])
+    counts = targets.loc[targets.label == 1, "target"].dropna().map(lambda t: re.sub(r"[^a-z0-9]", "", t.lower()))
+    counts = counts.value_counts()
+    return frozenset(b for b, c in counts.items()
+                     if c >= BRAND_MIN_COUNT and len(b) >= 4 and b not in NOT_BRANDS and b not in features.GENERIC_WORDS)
+
+
+def refresh_brand_features() -> None:
+    """브랜드-도메인 일치 피처만 저장된 제목·본문·URL 로 다시 계산한다 (원본 불필요)."""
+    brands = train_brands()
+    with open(BRANDS_PATH, "w") as fh:
+        json.dump(sorted(brands), fh, ensure_ascii=False, indent=0)
+    print(f"train 브랜드 {len(brands)}개 → {BRANDS_PATH}", flush=True)
+    for name in sorted(os.listdir(OUT_DIR)):
+        path = os.path.join(OUT_DIR, name)
+        df = pd.read_parquet(path)
+        fresh = pd.DataFrame([features.brand_features(t, x, u, brands)
+                              for t, x, u in zip(df["title"], df["text"], df["url_clean"])], index=df.index)
+        df[fresh.columns] = fresh
+        df.to_parquet(path + ".tmp", index=False, compression="zstd")
+        os.replace(path + ".tmp", path)
+        print(f"{name}: 브랜드 피처 다시 계산", flush=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="PhreshPhish 받기 → 피처 추출 → 원본 삭제 반복")
     parser.add_argument("--only", nargs="*", help="이 파일들만 (예: train-005)")
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--refresh-url", action="store_true", help="저장된 결과의 URL 피처만 다시 계산")
+    parser.add_argument("--refresh-brand", action="store_true", help="저장된 결과의 브랜드-도메인 일치 피처만 다시 계산")
     args = parser.parse_args()
     if args.refresh_url:
         refresh_url_features()
+        return
+    if args.refresh_brand:
+        refresh_brand_features()
         return
 
     os.makedirs(OUT_DIR, exist_ok=True)

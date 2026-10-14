@@ -29,42 +29,42 @@
 
 | 설정 | 가중치 | 반복 | 기준 점수 |
 |---|---|---|---|
-| {"num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 125 | 0.3857 |
-| {"num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 117 | 0.3756 |
-| {"num_leaves": 31, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 102 | 0.3972 |
-| {"num_leaves": 31, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 116 | 0.3720 |
-| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 106 | 0.4420 |
-| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 135 | 0.4218 |
-| {"num_leaves": 127, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 92 | 0.4477 |
-| {"num_leaves": 127, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 116 | 0.4207 |
-| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 179 | 0.4685 |
-| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 253 | 0.4424 |
-| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 15 | 0.4560 |
-| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 231 | 0.4573 |
-| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 5 | 74 | 0.5020 |
-| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 20 | 70 | 0.4973 |
-| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 50 | 74 | 0.5039 |
+| {"num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 107 | 0.3945 |
+| {"num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 181 | 0.4188 |
+| {"num_leaves": 31, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 137 | 0.4192 |
+| {"num_leaves": 31, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 128 | 0.4396 |
+| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 87 | 0.4257 |
+| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 178 | 0.4445 |
+| {"num_leaves": 127, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 50 | 0.4726 |
+| {"num_leaves": 127, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 96 | 0.4307 |
+| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 86 | 0.4648 |
+| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 157 | 0.4665 |
+| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 57 | 0.4842 |
+| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 115 | 0.4406 |
+| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 5 | 57 | 0.4939 |
+| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 20 | 72 | 0.4791 |
+| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 50 | 30 | 0.4758 |
 
-선택: {'num_leaves': 255, 'min_data_in_leaf': 50, 'feature_fraction': 0.5}, 가중치 50, 반복 74, 기준 점수 0.5039 (사이트 이름 피처를 빼면 0.4924)
+선택: {'num_leaves': 255, 'min_data_in_leaf': 300, 'feature_fraction': 0.5}, 가중치 5, 반복 57, 기준 점수 0.4939 (사이트 이름 피처를 빼면 0.5107)
 
 ## LightGBM [stacked] (시간 검증: 학습 228,875행 / 검증 77,520행, 검증의 호스팅 정상 158행)
 
 | 설정 | 가중치 | 반복 | 기준 점수 |
 |---|---|---|---|
-| {"num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 455 | 0.8529 |
-| {"num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 297 | 0.8617 |
-| {"num_leaves": 31, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 378 | 0.8576 |
-| {"num_leaves": 31, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 174 | 0.8516 |
-| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 462 | 0.8552 |
-| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 657 | 0.8640 |
-| {"num_leaves": 127, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 5 | 0.8387 |
-| {"num_leaves": 127, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 7 | 0.8540 |
-| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 7 | 0.8109 |
-| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 326 | 0.8610 |
-| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 5 | 0.8373 |
-| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 7 | 0.8542 |
-| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 5 | 214 | 0.8603 |
-| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 20 | 215 | 0.8568 |
-| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 50 | 476 | 0.8644 |
+| {"num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 601 | 0.8712 |
+| {"num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 280 | 0.8688 |
+| {"num_leaves": 31, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 435 | 0.8755 |
+| {"num_leaves": 31, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 438 | 0.8698 |
+| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 423 | 0.8729 |
+| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 867 | 0.8794 |
+| {"num_leaves": 127, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 307 | 0.8704 |
+| {"num_leaves": 127, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 143 | 0.8666 |
+| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.5} | 1 | 412 | 0.8667 |
+| {"num_leaves": 255, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 1 | 325 | 0.8785 |
+| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.5} | 1 | 345 | 0.8648 |
+| {"num_leaves": 255, "min_data_in_leaf": 300, "feature_fraction": 0.8} | 1 | 452 | 0.8745 |
+| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 5 | 489 | 0.8810 |
+| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 20 | 265 | 0.8738 |
+| {"num_leaves": 127, "min_data_in_leaf": 50, "feature_fraction": 0.8} | 50 | 374 | 0.8749 |
 
-선택: {'num_leaves': 127, 'min_data_in_leaf': 50, 'feature_fraction': 0.8}, 가중치 50, 반복 476, 기준 점수 0.8644 (사이트 이름 피처를 빼면 0.8600)
+선택: {'num_leaves': 127, 'min_data_in_leaf': 50, 'feature_fraction': 0.8}, 가중치 5, 반복 489, 기준 점수 0.8810 (사이트 이름 피처를 빼면 0.8796)

@@ -100,3 +100,26 @@ def test_label_groups_follow_fixed_rules():
     assert label_group("GrandLisboaMacau", "https://1.2.3.4:4777") == "casino"
     assert label_group("bet365", "https://b03.co") == "betting"
     assert label_group("jansport", "https://x.com") == "other"
+
+
+def test_brand_domain_match_cases():
+    def b(url, title, brands=frozenset()):
+        return F.brand_features(title, "", url, brands)
+    assert b("https://www.correios.com.br/login", "Correios")["title_domain_match"] == 1
+    assert b("https://banco.bradesco", "Banco Bradesco | Você primeiro")["title_domain_match"] == 1
+    assert b("https://sbi.co.in", "State Bank of India")["title_domain_match"] == 1      # 머리글자
+    fake = b("https://rricrosoft-office.org/i/x", "Microsoft")
+    assert fake["title_domain_match"] == 0 and fake["title_lookalike"] == 1
+    generic = b("https://login.ionos.de", "Login – Zugang zu Ihrem Kundenkonto")      # 흔한 단어끼리는 무시
+    assert generic["title_domain_match"] == 0 and generic["title_lookalike"] == 0
+    assert b("https://paypal.secure-x.com/a", "PayPal")["title_domain_match"] == 0      # 하위 도메인의 브랜드는 일치 아님
+
+
+def test_known_brand_mismatch_and_mentions():
+    brands = frozenset({"paypal", "microsoft"})
+    assert F.brand_features("PayPal: Log in", "", "https://evil.top", brands)["known_brand_mismatch"] == 1
+    assert F.brand_features("PayPal: Log in", "", "https://www.paypal.com", brands)["known_brand_mismatch"] == 0
+    assert F.brand_features("Hi", "Correios ... correios.com.br", "https://correios.com.br", brands)["text_domain_mentions"] == 2
+    assert F.brand_features("", "", "http://1.2.3.4/a", brands) == {
+        "title_domain_match": 0, "title_domain_sim": 0.0, "title_lookalike": 0,
+        "text_domain_mentions": 0, "known_brand_mismatch": 0}

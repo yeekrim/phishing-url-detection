@@ -32,6 +32,7 @@ import ipaddress
 import math
 import re
 from collections import Counter
+from difflib import SequenceMatcher
 from urllib.parse import urljoin, urlsplit
 
 import lxml.html
@@ -323,8 +324,71 @@ def html_features(html: str | None, url: str, text_chars: int = TEXT_CHARS) -> t
     return feats, texts
 
 
+# ---------------------------------------------------------------------------
+# 브랜드-도메인 일치 (제목·본문)
+# ---------------------------------------------------------------------------
+# Mishra & Varshney(BDI)는 로고·폼·링크의 도메인을 페이지 도메인과 비교한다. 여기서는 같은 생각을
+# 페이지 제목·본문으로 넓혀, "페이지가 스스로 밝히는 이름이 이 도메인의 이름인가" 를 본다.
+# 브랜드 목록 없이 계산하므로 학습 때 못 본 공격 대상에도 쓸 수 있다.
+# 근거(최종 모델 오탐률 0.1%): 비밀번호 입력란이 있는 피싱 탐지율 67%, 점수 최상위 오탐에 공식 사이트
+# (correios.com.br, banco.bradesco 등)가 많았다. train 일부에서 "제목 단어가 사이트 이름에 있음" 은
+# 정상 61% / 피싱 23%, "철자만 비슷함(0.8 이상)" 은 정상 2% / 피싱 8% 였다.
+
+# 사이트 이름이 아니어도 제목·도메인에 흔히 나오는 단어 (이것끼리 맞는 것은 일치로 보지 않는다)
+GENERIC_WORDS = {
+    "login", "logon", "signin", "sign", "account", "accounts", "home", "homepage", "welcome", "page", "online",
+    "secure", "security", "verify", "verification", "update", "mail", "email", "webmail", "portal", "official",
+    "site", "website", "service", "services", "support", "help", "index", "default", "untitled", "loading",
+    "document", "file", "files", "error", "bank", "banking", "shop", "store", "free", "news", "blog", "with",
+    "your", "from", "this", "that", "here", "best", "about", "contact", "click", "form", "forms", "access",
+    "auth", "user", "client", "customer", "member", "members", "center", "centre", "info", "online", "app",
+    "apps", "cloud", "server", "host", "hosting", "domain", "http", "https", "www", "html", "index",
+}
+ACRONYM_SKIP = {"of", "the", "and", "de", "du", "la", "le", "des", "da", "do", "di", "del", "et", "y", "e"}
+LOOKALIKE_SIM = 0.8
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", (text or "").lower())
+
+
+def _site_label(url: str) -> str:
+    host = (safe_split(url).hostname or "").lower()
+    return "" if _is_ip(host) else _extract(host).domain.lower()
+
+
+def brand_features(title: str, text: str, url: str, brands: frozenset[str] = frozenset()) -> dict:
+    """title·text 는 저장된 텍스트 필드(제목, 본문 앞 2,000자), url 은 strip_query() 를 거친 주소.
+    brands: train 피싱의 공격 대상 이름(정규화). 비어 있으면 known_brand_mismatch 는 0."""
+    label = _site_label(url)
+    label_flat = re.sub(r"[^a-z0-9]", "", label)
+    label_parts = [t for t in re.split(r"[^a-z0-9]+|\d+", label) if len(t) >= 3 and t not in GENERIC_WORDS]
+    words = _words(title)
+    title_flat = "".join(words)
+    tokens = [w for w in words if len(w) >= 4 and w not in GENERIC_WORDS]
+    acronym = "".join(w[0] for w in words if w not in ACRONYM_SKIP)
+    match = bool(label_flat) and (
+        any(t in label_flat for t in tokens)
+        or (len(label_flat) >= 4 and label_flat not in GENERIC_WORDS and label_flat in title_flat)
+        or (len(label_flat) >= 2 and acronym == label_flat)
+    )
+    sim = max((SequenceMatcher(None, t, l).ratio() for t in tokens[:15] for l in label_parts + [label_flat]
+               if l), default=0.0)
+    mentions = (text or "").lower().count(label_flat) if len(label_flat) >= 4 else 0
+    named = [b for b in brands if b in title_flat]
+    return {
+        "title_domain_match": int(match),
+        "title_domain_sim": sim,
+        "title_lookalike": int(not match and sim >= LOOKALIKE_SIM),
+        "text_domain_mentions": min(mentions, 50),
+        "known_brand_mismatch": int(bool(named) and not any(b in label_flat for b in named)),
+    }
+
+
 def compute(url: str, html: str | None) -> dict:
-    """한 행의 전체 피처 + 텍스트 필드. url_clean 은 URL 문자열 모델(n-gram)에도 이 주소를 쓰기 위해 저장."""
+    """한 행의 전체 피처 + 텍스트 필드. url_clean 은 URL 문자열 모델(n-gram)에도 이 주소를 쓰기 위해 저장.
+    known_brand_mismatch 는 train 의 브랜드 목록이 필요해서 여기서는 0 이고, extract_phreshphish.py --refresh-brand 로 채운다."""
     clean = strip_query(url)
     feats, texts = html_features(html, url)
-    return {"url_clean": clean, **url_features(clean), **feats, **texts}
+    return {"url_clean": clean, **url_features(clean), **feats, **texts,
+            **brand_features(texts["title"], texts["text"], clean)}
