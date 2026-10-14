@@ -37,7 +37,7 @@ GROUPS = ("blogspot_google", "casino", "betting")
 
 def label_group(target: str | None, url_clean: str) -> str:
     """피싱 행의 묶음 이름. 해당 없으면 'other'."""
-    target = (target or "").strip().lower()
+    target = target.strip().lower() if isinstance(target, str) else ""
     if target == "google" and BLOGSPOT.match(url_clean or ""):
         return "blogspot_google"
     if target in CASINO:
