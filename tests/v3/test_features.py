@@ -123,3 +123,14 @@ def test_known_brand_mismatch_and_mentions():
     assert F.brand_features("", "", "http://1.2.3.4/a", brands) == {
         "title_domain_match": 0, "title_domain_sim": 0.0, "title_lookalike": 0,
         "text_domain_mentions": 0, "known_brand_mismatch": 0}
+
+
+def test_platforms_missing_from_bundled_psl_are_hosted():
+    for host in ("a.blogspot.cl", "a.blogspot.com.au", "x.gitbook.io", "shop.weebly.com", "a.b.wordpress.com"):
+        assert F.url_features(f"https://{host}")["is_hosted_platform"] == 1, host
+    assert F.registered_domain("a.blogspot.cl") != F.registered_domain("b.blogspot.cl")
+    assert F.registered_domain("a.b.wordpress.com") == "b.wordpress.com"
+    assert F.url_features("https://a.blogspot.cl")["site_label_len"] == 1
+    for host in ("weebly.com", "www.weebly.com", "a.kleinanzegien.de", "a.blogspot.com"):
+        expected = int(host == "a.blogspot.com")   # blogspot.com 은 원래 사설 접미사 목록에 있음
+        assert F.url_features(f"https://{host}")["is_hosted_platform"] == expected, host

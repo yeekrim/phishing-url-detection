@@ -33,6 +33,7 @@ import math
 import re
 from collections import Counter
 from difflib import SequenceMatcher
+from typing import NamedTuple
 from urllib.parse import urljoin, urlsplit
 
 import lxml.html
@@ -57,9 +58,53 @@ COPYRIGHT = re.compile(r"©|&copy;|copyright", re.IGNORECASE)
 NULL_HREF = re.compile(r"^\s*(#.*|javascript:.*|about:blank)?\s*$", re.IGNORECASE)
 
 
-def registered_domain(host: str) -> str:
+# 공개 접미사 목록(tldextract 5.4.0 내장)에 사설 항목으로 없는 호스팅·사이트 빌더 서비스.
+# 하위 도메인마다 운영자가 다른 서비스만 넣었다 (서비스 성격으로 골랐고, 피싱 비율로 고르지 않았다).
+# 근거: PhreshPhish 전체에서 하위 도메인이 20개 이상인 등록 도메인 412개를 하나씩 보고 고름.
+# 무작위 하위 도메인을 쓰는 공격자 도메인(kleinanzegien.de 등), 메일 추적·단축 링크(sendgrid.net, page.link 등)는 넣지 않았다.
+# 예: test 의 *.blogspot.<국가> 피싱 17,848건 중 17,501건이 플랫폼으로 인식되지 않았고, gitbook.io 하위 도메인 19,547개도 마찬가지였다.
+EXTRA_PLATFORMS = {
+    "gitbook.io", "weeblysite.com", "weebly.com", "godaddysites.com", "fandom.com", "surge.sh", "webcindario.com",
+    "studio.site", "mybluehost.me", "teachable.com", "webwave.dev", "ubpages.com", "activehosted.com",
+    "codeanyapp.com", "mystrikingly.com", "myqcloud.com", "serv00.net", "wcomhost.com", "hubside.fr", "windows.net",
+    "formstack.com", "sviluppo.host", "zendesk.com", "substack.com", "atlassian.net", "mmm.page", "wordpress.com",
+    "hs-sites.com", "backblazeb2.com", "edgeone.app", "flazio.com", "squarespace.com", "teemill.com",
+    "crazydomains.com", "tumblr.com", "zohodesk.com", "daftpage.com", "hostingersite.com", "medium.com",
+    "mytemp.website", "freewebhostmost.com", "myportfolio.com", "000.pe", "forms.app", "filesusr.com", "rf.gd",
+    "b-cdn.net", "mypixieset.com", "000webhostapp.com", "freshdesk.com", "odoo.com", "4everland.app", "free.nf",
+    "ct.ws", "temporary.site", "gorgias.help", "systeme.io", "fleek.co", "b12sites.com", "salesforce-sites.com",
+    "tempisite.com", "tiiny.site", "inmotionhosting.com", "pory.app", "rollout.site", "zya.me", "itch.io",
+    "peraichi.com", "jimdofree.com", "myftpupload.com", "gumroad.com", "statuspage.io", "webnode.page",
+    "temporary-demo.site", "webydo.com", "myclickfunnels.com", "secureserver.net", "sharepoint.com",
+}
+
+
+class HostParts(NamedTuple):
+    subdomain: str
+    domain: str      # 사이트 이름 (등록 도메인의 접미사 앞 부분)
+    suffix: str
+    is_private: bool  # 호스팅 플랫폼 아래의 사이트인가
+
+
+def split_host(host: str) -> HostParts:
+    """tldextract(사설 접미사 포함) + 내장 목록에 없는 플랫폼(EXTRA_PLATFORMS, 국가별 blogspot) 보정."""
+    host = (host or "").lower()
     ext = _extract(host)
-    return (ext.top_domain_under_public_suffix or host or "").lower()
+    if not ext.is_private:
+        base = _extract_public(host).top_domain_under_public_suffix
+        is_platform = base in EXTRA_PLATFORMS or base.startswith("blogspot.")
+        rest = host[: -(len(base) + 1)] if base and host.endswith("." + base) else ""
+        if is_platform and rest and rest != "www":
+            parts = rest.split(".")
+            return HostParts(".".join(parts[:-1]), parts[-1], base, True)
+    return HostParts(ext.subdomain, ext.domain, ext.suffix, bool(ext.is_private))
+
+
+def registered_domain(host: str) -> str:
+    parts = split_host(host)
+    if parts.is_private and parts.domain:
+        return f"{parts.domain}.{parts.suffix}"
+    return (_extract(host).top_domain_under_public_suffix or host or "").lower()
 
 
 def _entropy(s: str) -> float:
@@ -117,7 +162,7 @@ def url_features(url: str) -> dict:
     """url 은 strip_query() 를 거친 주소여야 한다."""
     parts = safe_split(url)
     host = (parts.hostname or "").lower()
-    ext = _extract(host)
+    ext = split_host(host)
     public = _extract_public(host)
     path = parts.path
     lower = url.lower()
@@ -354,7 +399,7 @@ def _words(text: str) -> list[str]:
 
 def _site_label(url: str) -> str:
     host = (safe_split(url).hostname or "").lower()
-    return "" if _is_ip(host) else _extract(host).domain.lower()
+    return "" if _is_ip(host) else split_host(host).domain.lower()
 
 
 def brand_features(title: str, text: str, url: str, brands: frozenset[str] = frozenset()) -> dict:
