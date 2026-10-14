@@ -90,3 +90,13 @@ def test_trailing_slash_and_doctype_are_normalized():
     _, t1 = F.html_features("<!DOCTYPE html>\n<html><body>a</body></html>", PAGE)
     _, t2 = F.html_features("<html><body>a</body></html>", PAGE)
     assert t1["html_prefix"] == t2["html_prefix"]
+
+
+def test_label_groups_follow_fixed_rules():
+    from label_groups import label_group
+    assert label_group("google", "https://abc.blogspot.com.au") == "blogspot_google"
+    assert label_group("google", "https://accounts-google.example.com/x") == "other"
+    assert label_group("facebook", "https://abc.blogspot.com") == "other"
+    assert label_group("GrandLisboaMacau", "https://1.2.3.4:4777") == "casino"
+    assert label_group("bet365", "https://b03.co") == "betting"
+    assert label_group("jansport", "https://x.com") == "other"
