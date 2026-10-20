@@ -19,3 +19,6 @@ best_model.keras
 .DS_Store
 .idea/
 .vscode/
+
+# 에이전트 작업용 임시 파일 (승인된 SPEC 복구용, AGENTS.md 4절)
+.agents/tmp/
